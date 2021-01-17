@@ -35,7 +35,8 @@ int main( int argc, char **argv ) {
         if(rank == 0){
             cout << "Error: wrong arguments given!\n";
         }
-    } else {
+    } 
+    else{
         if(rank == 0){
             int n;
             // reading input from the file
@@ -46,18 +47,21 @@ int main( int argc, char **argv ) {
                 file >> n;
                 file.close();
             }
-            int d = n / numprocs;
-            for(int i = 1, a = d + n % numprocs + 1; i < numprocs; i++){
-                pair<int, int> p = {a, a + d};
+
+            int d = n / numprocs, st = 1, en = st + d + n % numprocs;
+            for(int i = 1; i < numprocs; i++){
+                pair<int, int> p = {st, en};
                 MPI_Send(&p, 2 , MPI_INT, i, 0, MPI_COMM_WORLD);
-                a += d;
+                st = en;
+                en += d;
             }
-            double ans = sumOfReciprocalOfSquares(1, d + n % numprocs + 1);
+            double ans = sumOfReciprocalOfSquares(st, en);
             for(int i = 1; i < numprocs; i++){
                 double ret;
                 MPI_Recv(&ret, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 ans += ret;
             }
+
             // writing output to the file
             {
                 ofstream file;

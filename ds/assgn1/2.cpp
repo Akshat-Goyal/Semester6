@@ -10,7 +10,7 @@ typedef long long int ll;
 
 void quicksort(int *arr, int n){
     if(n <= 1) return;
-    int pivot = arr[n-1];
+    int pivot = arr[rand() % n];
     int j = -1;
     for(int i = 0; i < n; i++){
         if(arr[i] <= pivot) swap(arr[++j], arr[i]);

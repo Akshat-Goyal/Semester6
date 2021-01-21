@@ -71,19 +71,15 @@ int main( int argc, char **argv ) {
                 file.close();
             }
 
-            int d = n / numprocs, st = d, en = st + d + n % numprocs;
+            int d = n / numprocs, a = d + n % numprocs;
             for(int i = 1; i < numprocs; i++){
-                MPI_Send(arr + st, en - st , MPI_INT, i, 0, MPI_COMM_WORLD);
-                st = en;
-                en += d;
+                MPI_Send(arr + a + d * (i - 1), d , MPI_INT, i, 0, MPI_COMM_WORLD);
             }
-            quicksort(arr, d);
-            st = d, en = st + d + n % numprocs;
+            quicksort(arr, a);
             for(int i = 1; i < numprocs; i++){
-                MPI_Recv(arr + st, en - st, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                merge_arr(arr, 0, st, en);
-                st = en;
-                en += d;
+                MPI_Recv(arr + a, d, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                merge_arr(arr, 0, a, a + d);
+                a += d;
             }
 
             // writing output to the file

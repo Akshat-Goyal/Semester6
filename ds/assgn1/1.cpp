@@ -48,13 +48,14 @@ int main( int argc, char **argv ) {
                 file.close();
             }
 
-            int d = n / numprocs, st = 1, en = st + d + n % numprocs;
+            int d = n / numprocs, st = d + 1 + n % numprocs, en = st + d;
             for(int i = 1; i < numprocs; i++){
                 pair<int, int> p = {st, en};
                 MPI_Send(&p, 2 , MPI_INT, i, 0, MPI_COMM_WORLD);
                 st = en;
                 en += d;
             }
+            st = 1, en = st + d + n % numprocs;
             double ans = sumOfReciprocalOfSquares(st, en);
             for(int i = 1; i < numprocs; i++){
                 double ret;

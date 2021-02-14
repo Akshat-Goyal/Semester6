@@ -34,6 +34,26 @@ void merge_arr(int *arr, int st, int mid, int en){
     while(j < n2) arr[l++] = arr2[j++];
 }
 
+void merge_ar(int *arr, int *sorted_arr, int n, int numprocs){
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+    vector<pair<int, int>> it(numprocs);
+    int d = n / numprocs, a = d + n % numprocs;
+    it[0] = {0, a};
+    for(int i = 1; i < numprocs; i++){
+        it[i] = {a, a + d};
+        a += d;
+    }
+    for(int i = 0; i < numprocs; i++){
+        if(it[i].first < it[i].second) pq.push({arr[it[i].first++], i});
+    }
+    int l = 0;
+    while(!pq.empty()){
+        auto p = pq.top(); pq.pop();
+        sorted_arr[l++] = p.first;
+        if(it[p.second].first < it[p.second].second) pq.push({arr[it[p.second].first++], p.second});
+    }
+}
+
 int main( int argc, char **argv ) {
     int rank, numprocs;
 
@@ -90,7 +110,7 @@ int main( int argc, char **argv ) {
                 for(int i = 0; i < n; i++){
                     file << arr[i] << " ";
                 }
-                cout << "\n";
+                file << "\n";
                 file.close();
             }
         }

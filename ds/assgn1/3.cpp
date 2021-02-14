@@ -69,7 +69,8 @@ int main( int argc, char **argv ) {
             }
         }
         
-        vector<int> color(m, 0);
+        // color[i] is color of node[i] for i 0 to m - 1, color[m] is no. of colored nodes.
+        vector<int> color(m + 1, 0);
         vector<char> iscolored(m, 0);
         if(rank == 0){
             // finding delta = max of degree of nodes.
@@ -78,14 +79,16 @@ int main( int argc, char **argv ) {
                 delta = max(delta, (int)lgraph[i].size());
             }
             delta += 1;
-            // assigning random color to nodes from 1 to delta.
+            // assigning random temp. color to nodes from 1 to delta.
             for(int i = 0; i < m; i++){
                 color[i] = rand() % delta + 1;
             }
         }
         // broadcasting color to all processes.
-        MPI_Bcast(&(color[0]), m, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&(color[0]), m + 1, MPI_INT, 0, MPI_COMM_WORLD);
         
+        // uncolored nodes of current process.
+        set<int> nodes;
         if(rank == 0){
             // distributing m nodes equally to all the processes.
             int d = m / numprocs, a = d + m % numprocs;
@@ -94,127 +97,81 @@ int main( int argc, char **argv ) {
                 MPI_Send(&(p.first), 2 , MPI_INT, i, 0, MPI_COMM_WORLD);
                 a += d;
             }
-
-            // uncolored nodes of current process.
-            set<int> nodes;
             a = d + m % numprocs;
             for(int i = 0; i < a; i++) nodes.insert(i);
 
-            // done = no. of colored nodes.
-            int done = 0;
-            // nodes_per_process[i] = no. of colored nodes of ith proc.
-            vector<int> nodes_per_procs(numprocs, 0);
-            // while all nodes are not colored
-            while(done != m){
-                // nodes whose neighbours have less color value than it, form independent set.
-                vector<int> iset;
-                for(auto it = nodes.begin(); it != nodes.end();){
-                    int mx = 0, idx = -1;
-                    for(auto j: lgraph[*it]){
-                        if(iscolored[j]) continue;
-                        if(color[j] > mx){
-                            mx = color[j];
-                            idx = j;
-                        }
-                    }
-                    if(color[*it] > mx || (color[*it] == mx && *it < idx)){
-                        iset.push_back(*it);
-                        it = nodes.erase(it);
-                    }
-                    else{
-                        it++;
+        }
+        else{
+            pair<int, int> p;
+            MPI_Recv(&(p.first), 2, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            for(int i = p.first; i < p.second; i++) nodes.insert(i);
+        }
+
+        vector<pair<int, int>> colored(m / numprocs);
+        // while all nodes are not colored
+        while(color[m] != m){
+            // nodes whose neighbours have less color value than it, form independent set.
+            vector<int> iset;
+            for(auto it = nodes.begin(); it != nodes.end();){
+                int mx = 0, idx = -1;
+                for(auto j: lgraph[*it]){
+                    if(iscolored[j]) continue;
+                    if(color[j] > mx){
+                        mx = color[j];
+                        idx = j;
                     }
                 }
-
-                for(auto i: iset){
-                    // assign min color to node not in its neighbour.
-                    int mn = 1;
-                    for(auto j: lgraph[i]){
-                        if(color[j] == mn) mn++;
-                        else break;
-                    }
-                    color[i] = mn;
-                    iscolored[i] = 1;
-                    done++;
-                    nodes_per_procs[0]++;
+                if(color[*it] > mx || (color[*it] == mx && *it < idx)){
+                    iset.push_back(*it);
+                    it = nodes.erase(it);
                 }
+                else{
+                    it++;
+                }
+            }
 
+            for(int i = 0; i < (int)iset.size(); i++){
+                set<int> col;
+                for(auto j: lgraph[iset[i]]) col.insert(color[j]);
+                // assign min color to node not in its neighbour.
+                int mn = 1;
+                for(auto j: col){
+                    if(j == mn) mn++;
+                    else break;
+                }
+                if(rank == 0){
+                    color[iset[i]] = mn;
+                    iscolored[iset[i]] = 1;
+                    color[m]++;
+                }
+                else{
+                    colored[i] = {iset[i], mn};
+                }
+            }
+
+            if(rank == 0){
                 for(int i = 1; i < numprocs; i++){
                     // for each process, receives their colored nodes and updates color array.
-                    if(nodes_per_procs[i] == d) continue;
                     MPI_Status status;
                     MPI_Probe(i, 0, MPI_COMM_WORLD, &status);
                     int size;
                     MPI_Get_count(&status, MPI_INT, &size);
-                    vector<pair<int, int>> colored(size / 2);
                     MPI_Recv(&(colored[0].first), size, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    for(auto j: colored){
-                        color[j.first] = j.second;
-                        iscolored[j.first] = 1;
-                        done++;
-                        nodes_per_procs[i]++;
+                    size /= 2;
+                    for(int j = 0; j < size; j++){
+                        color[colored[j].first] = colored[j].second;
+                        iscolored[colored[j].first] = 1;
+                        color[m]++;
                     }
-                }
-
-                for(int i = 1; i < numprocs; i++){
-                    if(nodes_per_procs[i] == d) continue;
-                    // send updated color, iscolored array to processes.
-                    MPI_Send(&(color[0]), m, MPI_INT, i, 0, MPI_COMM_WORLD);
-                    MPI_Send(&(iscolored[0]), m, MPI_BYTE, i, 0, MPI_COMM_WORLD);
                 }
             }
-        }
-        else{
-            // uncolored nodes of current process.
-            set<int> nodes;
-            {
-                pair<int, int> p;
-                MPI_Recv(&(p.first), 2, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for(int i = p.first; i < p.second; i++) nodes.insert(i);
-            }
-            // while there are uncolored nodes
-            while(nodes.size()){
-                // nodes whose neighbours have less color value than it, form independent set.
-                vector<int> iset;
-                for(auto it = nodes.begin(); it != nodes.end();){
-                    int mx = 0, idx = -1;
-                    for(auto j: lgraph[*it]){
-                        if(iscolored[j]) continue;
-                        if(color[j] > mx){
-                            mx = color[j];
-                            idx = j;
-                        }
-                    }
-                    if(color[*it] > mx || (color[*it] == mx && *it < idx)){
-                        iset.push_back(*it);
-                        it = nodes.erase(it);
-                    }
-                    else{
-                        it++;
-                    }
-                }
-
-                int size = iset.size();
-                // array of {node no., color}.
-                vector<pair<int, int>> colored(size);
-                for(int i = 0; i < size; i++){
-                    // assign min color to node not in its neighbour.
-                    int mn = 1;
-                    for(auto j: lgraph[iset[i]]){
-                        if(color[j] == mn) mn++;
-                        else break;
-                    }
-                    colored[i] = {iset[i], mn};
-                }
+            else{
                 // updated nodes sent to root.
-                MPI_Send(&(colored[0].first), 2 * size, MPI_INT, 0, 0, MPI_COMM_WORLD);
-
-                if(nodes.size()){
-                    // updated color, iscolored array received from root.
-                    MPI_Recv(&(color[0]), m, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    MPI_Recv(&(iscolored[0]), m, MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                }
+                MPI_Send(&(colored[0].first), 2 * (int)iset.size(), MPI_INT, 0, 0, MPI_COMM_WORLD);
             }
+            // broadcasts updated color, iscolored array to processes.
+            MPI_Bcast(&(color[0]), m + 1, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&(iscolored[0]), m, MPI_BYTE, 0, MPI_COMM_WORLD);
         }
 
         if(rank == 0){
@@ -222,10 +179,13 @@ int main( int argc, char **argv ) {
             ofstream file;
             string filename = argv[argc - 1];
             file.open(filename.c_str());
+            set<int> col;
+            for(auto i: color) col.insert(i);
+            file << col.size() << "\n";
             for(int i = 0; i < m; i++){
                 file << color[i] << " ";
             }
-            cout << "\n";
+            file << "\n";
             file.close();
         }
     }

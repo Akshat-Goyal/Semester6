@@ -6,10 +6,10 @@ main(Args) ->
     [Input_file, Output_file] = Args,
     % reading input from file, {No. of processes, Token}
     {N, Token} = input(Input_file),
+    % output file descriptor
+    {ok, Fd_out} = file:open(Output_file, [write]),
     if 
         N > 1 -> 
-            % output file descriptor
-            {ok, Fd_out} = file:open(Output_file, [write]),
             % creating N - 1 processes
             Nodes = create(N, Fd_out),
             % connects the nodes in ring fashion by sending process i pid of process (i + 1) % N
@@ -20,13 +20,11 @@ main(Args) ->
             % process 0 sends token to process 1
             send(hd(Nodes), Token, ID),
             % process 0 receives token from process N - 1
-            Token = rec(ID, Fd_out),
-
-            % closing output file descriptor
-            file:close(Fd_out),
-            done;
-        true -> done
-    end.
+            Token = rec(ID, Fd_out);
+        true -> ok
+    end,
+    % closing output file descriptor
+    file:close(Fd_out).
 
 % reads input from the input file
 input(Input_file) ->

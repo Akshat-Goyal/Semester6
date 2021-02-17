@@ -36,6 +36,7 @@ input(Input_file) ->
     {N, Token}.
 
 % creates N - 1 processes from 1 to N - 1
+% returns list of Pid of processes
 create(N, Fd_out) ->
     [spawn(?MODULE, token, [ID, Fd_out]) || ID <- lists:seq(1, N - 1)].
 

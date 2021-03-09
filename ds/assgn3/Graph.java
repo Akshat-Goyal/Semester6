@@ -54,7 +54,7 @@ public class Graph {
          ranks = new int[n + 1];
          for(int i = 1; i <= n; i++){
             parents[i] = i;
-            ranks[i] = -1;
+            ranks[i] = 0;
          }
       }
    

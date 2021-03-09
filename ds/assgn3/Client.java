@@ -38,7 +38,8 @@ public class Client {
             else{
                System.out.println("Error: Wrong command!!");
             }
-         } 
+         }
+         input.close();
       }
       catch (Exception e) {
          System.err.println("Client exception: " + e.toString()); 

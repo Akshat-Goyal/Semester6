@@ -10,22 +10,33 @@ the minimum weight spanning tree of a given graph.
 - The server should be able to handle multiple clients simultaneously and should also work with clients
 on other machines.
 
-## Description
+## Architecture
 
+- RMI stands for Remote Method Invocation. The RMI allows an object to invoke methods on an object running in another JVM.
+- The client can remotely call functions declared in the interface `MST` which are provided by the server and registered using the call `registry.bind("MST", stub)` in the Server.java code.
+- `ImplMST` contains the implementation of the functions declared in `MST`.
 
-# Running the code
+## Algorithm
+
+- HashMap is used for mapping graph_identifier to the Graph object.
+- Graph class contains edge class for edges, kruskal class for minimum weight of spanning tree using kruskal algorithm, sortedSet for storing edges sorted by weight in ascending order.
+
+## Results and Observations
+
+For a graph with 1e<sup>5</sup> Nodes and around 1e<sup>5</sup> edges, it takes less than 2 seconds to return the weight of the MST.
+
+## Running the code
 
 ```
 javac *.java
-java Server <server_port>
-java Client <server_ip> <server_port> < <input_file>
+java Server 2000
+java Client 127.0.0.1 2000 < <input_file>
 ```
 
 Client can enter 3 type of commands:
 
 - add_graph <graph_identifier> <n>.
-This command will add a new graph on the server with the identifier graph identifier and n number of nodes. The graph identifier is a string with a maximum length of 10 and it won’t already exist. n will be in the range: 1
-<= n <= 100,000.
+This command will add a new graph on the server with the identifier graph identifier and n number of nodes. The graph identifier is a string with a maximum length of 10 and it won’t already exist. n will be in the range: 1 <= n <= 100,000.
 
 - add_edge <graph_identifier> <u> <v> <w>.
 This will add an undirected edge between the nodes u and v with weight w. u and v are the node numbers of the endpoints of the edge such that 1 <= u, v <= n and 0 <= w <= 10,000. n is the number of nodes in the specified graph. A graph with identifier graph identifier will already exist. There can be multiple edges and self-loops added to the graph.

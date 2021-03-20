@@ -5,9 +5,13 @@ Three dodecahedrons are:
 2. Undecagonal Pyramid
 3. Hexagonal Dipyramid
 
-Coordinates are calculated using python code in `dodecahedron.py` and redirected to <object_type>.txt file. Each face is given one random color.
+There are two variants of Decagonal Prism using Texture and Color. Rest 2 objects use color.
 
-`main.c` file takes the input for object type and reads the coordinates from <object_type>.txt file.
+
+# BONUS PART
+
+- Texture on Decagonal Prism is done.
+
 
 # Problem: Animating
 
@@ -40,20 +44,43 @@ Coordinates are calculated using python code in `dodecahedron.py` and redirected
 
 6. ESC - Exits window.
 
+
+# File Structure
+
+- `source/vertices/dodecahedron_generator.py` - generates 4 files in `source/vertices` folder. 
+    - `decagonal_prism.txt` - Decagonal Prism + Color coordinates.
+    - `undecagonal_pyramid.txt` - Undecagonal Pyramid + Color coordinates.
+    - `hexagonal_dipyramid.txt` - Hexagonal Dipyramid + Color coordinates.
+    - `texture_decagonal_prism.txt` - Decagonal Prism + Texture coordinates.
+    Each face of object is given one random color in first three files. Texture is used instead of color in 4th file.
+
+- `source/main.h` - header file, contains structs, functions, shaders.
+
+- `source/main.cpp` - contains main function. 
+
+- `source/texture.cpp` - contains texture function.
+
+
 # Running the Code
 
-- Follow this directory Structure - https://github.com/Akshat-Goyal/Semester-6/tree/master/cg/Hello-World
+- Add `glad`, `glfw`, `glm` libraries in `Hello-World/libraries`.
 
-- The code uses `glad`, `glfw`, `glm` libraries.
+- Run the following commands.
+    ```
+    mkdir build
+    cd build
+    cmake ..
+    make
+    ./assgn0
+    ```
 
-- Add all the files in `source` folder.
-
-- On running `main.c` file, code prints:
+- On executing binary file, code prints:
     ```
     Press:
     1 for Decagonal Prism
     2 for Undecagonal Pyramid
     3 for Hexagonal Dipyramid
+    4 for Bonus Part: Texture Decagonal Prism
     Any other key for Exit
     ```
     You need to press key to select object type to be shown on window. After that window opens and you can press other keys mentioned above to move the camera and object.

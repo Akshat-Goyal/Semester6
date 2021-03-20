@@ -1,15 +1,6 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#ifndef __MAIN_H__
+#define __MAIN_H__
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include <iostream>
-#include <fstream>
-#include <string.h>
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -36,26 +27,52 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "   FragColor = vec4(ourColor, 1.0f);\n"
     "}\n\0";
 
+const char *texture_vertexShaderSource ="#version 330 core\n"
+    "layout (location = 0) in vec3 aPos;\n"
+    "layout (location = 1) in vec2 aTexCoord;\n"
+    "out vec2 TexCoord;\n"
+    "uniform mat4 M;\n"
+    "uniform mat4 V;\n"
+    "uniform mat4 P;\n"
+    "void main()\n"
+    "{\n"
+    "   gl_Position = P * V * M * vec4(aPos, 1.0);\n"
+    "   TexCoord = vec2(aTexCoord.x, aTexCoord.y);\n"
+    "}\0";
+
+const char *texture_fragmentShaderSource = "#version 330 core\n"
+    "out vec4 FragColor;\n"
+    "in vec2 TexCoord;\n"
+    "uniform sampler2D texture1;\n"
+    "void main()\n"
+    "{\n"
+    "   FragColor = texture(texture1, TexCoord);\n"
+    "}\n\0";
+
 struct Object{
+    bool type = 0;
     int n = 0, m = 0;
     float* vertices = NULL;
 
-    void select_type(){
+    bool select_type(){
         std::cout << "Press:\n";
         std::cout << "1 for Decagonal Prism\n";
         std::cout << "2 for Undecagonal Pyramid\n";
         std::cout << "3 for Hexagonal Dipyramid\n";
+        std::cout << "4 for Bonus Part: Texture Decagonal Prism\n";
         std::cout << "Any other key for Exit\n";
         int key = 3;
         std::cin>>key;
         char filename[128];
         switch(key){
-            case 1: strcpy(filename, "../source/decagonal_prism.txt"); break;
-            case 2: strcpy(filename, "../source/undecagonal_pyramid.txt"); break;
-            case 3: strcpy(filename, "../source/hexagonal_dipyramid.txt"); break;
+            case 1: strcpy(filename, "../source/vertices/decagonal_prism.txt"); break;
+            case 2: strcpy(filename, "../source/vertices/undecagonal_pyramid.txt"); break;
+            case 3: strcpy(filename, "../source/vertices/hexagonal_dipyramid.txt"); break;
+            case 4: strcpy(filename, "../source/vertices/texture_decagonal_prism.txt"); type = 1; break;
             default: exit(0);
         }
         get_vertices(filename);
+        return type;
     }
 
     void get_vertices(char filename[]){
@@ -203,153 +220,7 @@ struct Coordinates{
     }
 };
 
-int main()
-{
-    Object obj;
-    // selecting object type
-    obj.select_type();
-
-    // glfw: initialize and configure
-    // how to handle the windows n all are done with this
-    // ------------------------------
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-    // glfw window creation
-    // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
-    {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    // glad: load all OpenGL function pointers connect to opengl implementaion from driver
-    // ---------------------------------------
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
-    }
-
-    // build and compile our shader program
-    // ------------------------------------
-    // vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    // fragment shader
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    // check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    // link shaders
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    // check for linking errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    // first parameter is for number of buffer objects to create
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, obj.n * obj.m * sizeof(float), obj.vertices, GL_STATIC_DRAW);
-
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    // glBindVertexArray(0);
-
-    // as we only have a single shader, we could also just activate our shader once beforehand if we want to 
-    glUseProgram(shaderProgram);
-
-    // initialize M, V, P matrix
-    Coordinates coordinates(shaderProgram);
-
-    // render loop
-    // -----------
-    while (!glfwWindowShouldClose(window))
-    {
-        // take input and update MVP
-        // -----
-        coordinates.processInput(window, shaderProgram);
-
-        // render
-        // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        // depth
-        glEnable(GL_DEPTH_TEST);
-        // clear color and depth buffer
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // render the triangle
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, obj.n);
-
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
-    free(obj.vertices);
-
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
-    glfwTerminate();
-    return 0;
-}
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
@@ -359,3 +230,5 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
+
+#endif

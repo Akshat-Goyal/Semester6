@@ -63,6 +63,8 @@ There are two variants of Decagonal Prism using Texture and Color. Rest 2 object
 
 # Running the Code
 
+- First follow the instructions in `Hello-World` folder and set up the folder.
+
 - Add `glad`, `glfw`, `glm` libraries in `Hello-World/libraries`.
 
 - Run the following commands.

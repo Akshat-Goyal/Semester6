@@ -1,0 +1,230 @@
+%
+% This is the LaTeX template file for lecture notes for CS294-8,
+% Computational Biology for Computer Scientists.  When preparing 
+% LaTeX notes for this class, please use this template.
+%
+% To familiarize yourself with this template, the body contains
+% some examples of its use.  Look them over.  Then you can
+% run LaTeX on this file.  After you have LaTeXed this file then
+% you can look over the result either by printing it out with
+% dvips or using xdvi.
+%
+% This template is based on the template for Prof. Sinclair's CS 270.
+
+\documentclass[twoside]{article}
+\usepackage{graphicx}
+\graphicspath{ {./} }
+\setlength{\oddsidemargin}{0.25 in}
+\setlength{\evensidemargin}{0.25 in}
+\setlength{\topmargin}{-0.6 in}
+\setlength{\textwidth}{6.5 in}
+\setlength{\textheight}{8.5 in}
+\setlength{\headsep}{0.75 in}
+\setlength{\parindent}{0.2 in}
+\setlength{\parskip}{0.1 in}
+
+%
+% The following commands set up the lecnum (lecture number)
+% counter and make various numbering schemes work relative
+% to the lecture number.
+%
+
+%
+% The following macro is used to generate the header.
+%
+\newcommand{\lecture}[4]{
+   \pagestyle{myheadings}
+   \thispagestyle{plain}
+   \newpage
+   \setcounter{lecnum}{1}
+   \setcounter{page}{1}
+   \noindent
+   \begin{center}
+   \framebox{
+      \vbox{\vspace{2mm}
+    \hbox to 6.28in { {\bf Distributed System
+                        \hfill 30th March 2021} }
+       \vspace{4mm}
+       \hbox to 6.28in { {\Large \hfill Lecture: #1  \hfill} }
+       \vspace{2mm}
+       \hbox to 6.28in { {\it Lecturer: #2 \hfill #3} }
+      \vspace{2mm}}
+   }
+   \end{center}
+   \markboth{Lecture #1}{Lecture #1}
+   \vspace*{4mm}
+}
+
+%
+% Convention for citations is authors' initials followed by the year.
+% For example, to cite a paper by Leighton and Maggs you would type
+% \cite{LM89}, and to cite a paper by Strassen you would type \cite{S69}.
+% (To avoid bibliography problems, for now we redefine the \cite command.)
+% Also commands that create a suitable format for the reference list.
+\renewcommand{\cite}[1]{[#1]}
+\def\beginrefs{\begin{list}%
+        {[\arabic{equation}]}{\usecounter{equation}
+         \setlength{\leftmargin}{2.0truecm}\setlength{\labelsep}{0.4truecm}%
+         \setlength{\labelwidth}{1.6truecm}}}
+\def\endrefs{\end{list}}
+\def\bibentry#1{\item[\hbox{[#1]}]}
+
+%Use this command for a figure; it puts a figure in wherever you want it.
+%usage: \fig{NUMBER}{SPACE-IN-INCHES}{CAPTION}
+\newcommand{\fig}[3]{
+			\vspace{#2}
+			\begin{center}
+			Figure \thelecnum.#1:~#2
+			\end{center}
+	}
+
+% **** IF YOU WANT TO DEFINE ADDITIONAL MACROS FOR YOURSELF, PUT THEM HERE:
+
+\begin{document}
+
+\lecture{18}{Lini Thomas}{Akshat, Mohsin, Madhvi}
+%\footnotetext{These notes are partially based on those of Nigel Mansell.}
+
+% **** YOUR NOTES GO HERE:
+
+% Some general latex examples and examples making use of the
+% macros follow.  
+%**** IN GENERAL, BE BRIEF. LONG SCRIBE NOTES, NO MATTER HOW WELL WRITTEN,
+%**** ARE NEVER READ BY ANYBODY.
+
+\section{Gallager-Humblet-Spira (GHS) Algorithm}
+\subsection{Minimum level at which the whole MST could be formed}
+ The minimum level can be 1 as first, two nodes of level 0 can merge to form level 1 fragment, then this fragment can merge with other level 0 fragments one by one to form new fragments of level 1.
+ 
+% \begin{center}
+% \includegraphics[width=8cm, height=4cm]{q_img.png}
+% \end{center}
+
+
+\subsection{Maximum level at which the whole MST could be formed}
+
+\begin{enumerate}
+\item The level of a node increases when it joins a larger fragment or joins with an equal sized fragment.
+\item Let us attempt to grow the level of the nodes in the tree. To reach level 2 , we need two nodes to connect. (Min nodes for level 2 to exist: 2 nodes of level 1). For some node to reach level 3, we need two fragments of level 2 to connect.  (Min nodes for level 3 to exist:  two fragments with 2 nodes each at level2 : total min 4 nodes). For some node to reach level 4, we need two fragments of level 3 to connect( Min nodes for level 4 to exist: 8 nodes).
+\item To reach level k, we need min $2^{k}$ nodes involved. Thus, for n nodes, we can have at most log n levels. $N > 2^{k}$  where k is the max level. Thus  $ log N > k$  where $k$ is the max level.
+\end{enumerate}
+% \begin{center}
+% \includegraphics[width=8cm, height=4cm]{q2_img.png}
+% \end{center}
+
+
+
+\subsection{Complexity Analysis}
+The Gallager-Humblet-Spira algorithm computes the minimal spanning tree using at most $5N logN + 2|E|$ messages. 
+\begin{enumerate}
+\item Each edge is rejected at most once and this requires two messages (test and reject). This accounts for at most 2$|E|$ messages.
+\item  At any level, a node receives at most one initiate and one accept message, and sends at most one report, one changeroot or connect message, and one test message not leading to a rejection. For $logN$ levels, this accounts for a total of $5N logN$ messages.
+
+\end{enumerate}
+
+\subsection{Can the whole system be waiting with no progress being made?}
+\begin{enumerate}
+    \item No. If all the fragments have the same size, then there will be two fragments willing to merge as circular find is not possible.
+    \item Otherwise, the smallest one needs no permission, it can always connect and hence the algorithm always progresses.
+\end{enumerate}
+
+\subsection{Why do we not allow larger fragments to merge with smaller fragments?}
+
+\begin{enumerate}
+\item Consider Fragment F1 (smaller) trying to connect to F2 (larger). So he sends a connect and F2 responds with initiate.
+\item Meanwhile F2’s nodes might be doing a test trying to find the min outgoing edge. So a node p of F2 might send a test to a node q of F1.
+\item At the time when p’s test reaches q the node q may not have yet got the initialise msg telling him about his new fragment name. So p still believes that he is of a different fragment and since we are assuming level does not matter either so p responds with accept.
+\item So q sends this information up to his parent and so on until core edge. Let us say this edge qp is indeed the min outgoing edge off F2 (can’t be the edge on which F1 connected to F2 since that edge is by now marked as branch).
+\item Hence core edge sends down information asking q to send a connect to p. This connect  (as level does not matter) will make branch and introduce one more edge making a cycle.
+\end{enumerate}
+
+\subsection{When and how will a stuck fragment finally make progress}
+
+Consider the scenario that a fragment is kept waiting. This happens in two cases.
+\begin{enumerate}
+\item A test sent does not get a response as test was sent to a lower size fragment.
+\item A connect is sent to a fragment of equal or larger level but edge is not branch.
+\end{enumerate}
+
+Case1: A response to test is received either when the waited on fragment becomes of size equal or larger OR the waited on fragment joins the waiting fragment through some edge making the fragment names same and hence a reject is sent.
+
+Case2: Either the waiting fragment of same size finally sets the same edge on which other fragment is waiting as branch edge (just before he sends a connect himself) due to which initiate msg can be sent OR the waited on fragment becomes larger than waited on fragment.
+
+\section{Questions}
+\textbf{Q1.} Suppose we have two equal sized fragments F1 and F2 which have sent each other the initiate msg with status find. The initiate msg as we know sends initiate and test msgs down the tree to further children. Meanwhile, suppose that an initialised node of one fragment F1 sends a test to an uninitialised node of F2. F2 will find its fragment name to be different from the requested node and will accept. issue?
+\newline\newline \textbf{Ans.} It won’t accept because the level of node F1 is updated and since it’s level is higher than the level of node F2, F2 would try to process the message later and will not accept.
+
+\newline\newline\textbf{Q2.} Suppose we have two unequal sized fragments F1 (larger) and F2 where F1 has sent F2 an initiate msg with status find. The initiate msg as we know sends initiate and test msgs down the tree to further children. Meanwhile, suppose a node of F1 sends a test to an uninitialised node of F2. F2 will find its fragment name to be different from the requested node and will accept. Issue?
+\newline\newline \textbf{Ans.} It won’t accept the request from F1 because the level of F1 would be greater than the level of an uninitialised node of F2 and it would process the message later. Once the node of F2 is initialised it’s fragment name would be the same as that of F1 and therefore would send a REJECT message to F1.
+
+\section{Slip Test}
+
+\textbf{Q1.} Which of following are true:
+
+\begin{enumerate}
+\item A text msg can not be sent by a node of larger Fragment F1 to a node of the smaller fragment F2.
+\item A text msg can be sent by a node of larger Fragment F1 to a node of the smaller fragment F2 but the node might never respond until termination of the algorithm.
+\item A text msg can not be sent by a node of larger Fragment F1 to a node of the smaller fragment F2 but the node will definitely respond at some point of time.
+\item A termination detection algorithm is required to know if the algorithm has concluded.
+
+\textbf{Ans.} Option3 is correct. Basically a text message can not be sent by a node of larger Fragment F1 to a node of the smaller fragment F2 but it is guaranteed that the node will definitely respond at some point of time. Detailed reason is explained in section 1.6
+\end{enumerate}
+
+\textbf{Q2.} The current algorithm does not work if nodes have edge weights repeating because:
+\begin{enumerate}
+\item that would give multiple minimum spanning tree causing ambiguity in result.
+\item at the core edge where the final selection happens; if both subtrees have the same min outgoing edge then the algorithm can not deal with this scenario. We could giver priority of left subtree to right subtree and this could accommodate duplicate edges as well.
+\item None of the above.
+\end{enumerate}
+
+\textbf{Ans.} Option 3 is correct. Suppose Fragments A, B, C having same level has minimum edge of same weight. A sends connect to B, B sends connect to C, C sends connect to A. No fragment sends initiate, so now it is stuck in cycle.
+
+\section{Agreement Protocols}
+\subsection{System Model}
+\begin{enumerate}
+\item $n$ processes and at most $m$ of the processes can be faulty.
+\item Processors can directly communicate with other processors by message passing.
+\item Receiver knows the identity of the sender.
+\item Communication medium is reliable.
+\item Only Processors are prone to failure.
+\end{enumerate}
+
+\subsection{Applications of Consensus in Distributed Systems}
+Designed to achieve reliability in a network involving multiple reliable nodes.
+Required for decision likes
+\begin{enumerate}
+\item Agreement Condition: All non-faulty processes must agree on a common value.
+\item Validity Condition: The agreed upon value by non faulty processes must be v if x is non-faulty. The agreed upon value can be any value (may not be v) if x is faulty.
+\end{enumerate}
+
+\subsection{Byzantine Agreement Problem}
+One process $x$ broadcasts a value $v$
+\begin{enumerate}
+\item Whether to commit a distributed transaction to a database
+\item Consensus on leader (leader selection)
+\item What is the current value of the variable
+\end{enumerate}
+
+\subsection{Variations of Byzantine agreement problem}
+\subsubsection{Consensus}
+Each process broadcasts its initial value. All non-faulty processes must agree on a common value. If the initial value of all non-faulty processes is v, then the agreed upon value must be v.
+
+\subsubsection{Interactive Consistency}
+Each process k broadcasts its own value $v_{k}$. All non-faulty processes agree on a common vector $(v_1, v_2, \dots, v_n)$. If the $k^{th}$ process is non-faulty and its initial value is $v_k$, then the $k^{th}$ value in the vector agreed upon by non-faulty processes must be $v_k$. If the $k^{th}$ process is faulty then the $k^{th}$ value agreed upon by the non faulty process can be any value.
+
+\subsection{Byzantine solution for Interactive Consistency}
+Run the Byzantine solution on each process $i$. Each non faulty process gets $v_i$. The final vector is $(v_1, v_2, \dots, v_n)$.
+
+\subsection{Interactive Consistency for Consensus}
+Run the Interactive Consistency solution. Each non faulty process lands up with a common vector. Use a function that decides which among these to pick. Majority, min, max etc function could be used.
+
+
+Hence given a solution to the Byzantine Problem, we have a solution to both Consensus and Interactive Consistency Problem.
+
+
+\end{document}
+
+
+
+
+

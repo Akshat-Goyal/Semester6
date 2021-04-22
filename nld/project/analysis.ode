@@ -1,0 +1,15 @@
+init x1=0,x2=0,x3=0,x4=0,x5=0
+
+param a=0.2, b=0.01, c=100, d=0.05, c2=0.0002, c3=0.0005, c4=0.0002, c5=0.000002
+
+x1' = c * (x2 * x3 - x1)
+x2' = (-b * (x2 * x3 - x4) - c * (x2 * x3 - x1) + d * x3 * (x4 - 1) - x2 * x4 + x3) / c2
+x3' = (b * (x2 * x3 - x4) - c * (x2 * x3 - x1) + 2 * a * (x5 - x3 * x3) - d * x3 * (x4 - 1) - x3 + x5) / c3
+x4' = (b * (x2 - x3 * x4) + d * (1 - x3 * x4) - x2 * x4 + x5) / c4
+x5' = (-a * (x5 - x3 * x3) + x2 * x4 - x5) / c5
+
+@ total=60, dt=0.1, method=stiff
+@ bounds=1000000
+# @ NPLOT=3, yp1=x,yp2=y,yp3=z
+@ total=400
+done
